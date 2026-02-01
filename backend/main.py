@@ -1,20 +1,20 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import fugashi
+from janome.tokenizer import Tokenizer
 
 app = FastAPI()
 
-# Configuration CORS pour que ton frontend Vite puisse communiquer avec le backend
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # À restreindre plus tard avec l'URL Render de ton frontend
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialisation du tagueur (segmentation du japonais)
-tagger = fugashi.Tagger()
+# Initialisation de Janome (plus simple que Fugashi)
+tokenizer = Tokenizer()
 
 class TextPayload(BaseModel):
     content: str
@@ -22,19 +22,24 @@ class TextPayload(BaseModel):
 @app.post("/analyze")
 async def analyze_text(payload: TextPayload):
     words = []
-    for word in tagger(payload.content):
-        # On extrait les infos morphologiques de MeCab
-        # word.feature contient : PartOfSpeech, POS_detail, ..., Reading, etc.
-        feature = word.feature
+    # Janome découpe le texte
+    for token in tokenizer.tokenize(payload.content):
+        # Janome renvoie la grammaire sous forme de liste séparée par des virgules
+        # Ex: "Nom,Général,*,*,*,*,Livre,Hon,Hon"
+        part_of_speech = token.part_of_speech.split(',')[0]
         
+        # Gestion de la lecture (parfois Janome ne la trouve pas, on met la surface par défaut)
+        reading = token.reading if token.reading != '*' else token.surface
+
         words.append({
-            "surface": word.surface,      # Le texte tel qu'il apparaît
-            "lemma": word.feature.lemma,  # La forme de base (dictionnaire)
-            "reading": word.feature.kana, # La lecture en Katakana
-            "pos": word.feature.pos1,     # Nature grammaticale (Nom, Verbe...)
+            "surface": token.surface,       # Le mot affiché
+            "lemma": token.base_form,       # La forme du dictionnaire
+            "reading": reading,             # La prononciation (Katakana)
+            "pos": part_of_speech,          # Nature (Nom, Verbe...)
         })
     return {"tokens": words}
 
 @app.get("/")
 def health_check():
-    return {"status": "online", "language": "japanese"}
+    return {"status": "online", "engine": "janome"}
+
