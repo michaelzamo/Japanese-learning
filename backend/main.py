@@ -107,28 +107,51 @@ def get_reviews():
 # 4. Soumettre une révision (SRS)
 @app.post("/review")
 def submit_review(payload: ReviewPayload):
-    db = SessionLocal()
-    card = db.query(Card).filter(Card.id == payload.card_id).first()
-    if not card:
+    try:
+        db = SessionLocal()
+        card = db.query(Card).filter(Card.id == payload.card_id).first()
+
+        if not card:
+            db.close()
+            raise HTTPException(status_code=404, detail="Card not found")
+
+        # --- DÉBUT CORRECTION ---
+        # 1. Sécuriser les valeurs (au cas où elles seraient nulles dans la BDD)
+        current_interval = int(card.interval) if card.interval is not None else 1
+        current_ease = float(card.ease_factor) if card.ease_factor is not None else 2.5
+
+        # 2. Calculer les nouvelles valeurs
+        new_interval = current_interval
+        new_ease = current_ease
+
+        if payload.rating == "forgot":
+            new_interval = 1
+            new_ease = max(1.3, current_ease - 0.2)
+
+        elif payload.rating == "hard":
+            new_interval = int(current_interval * 1.2)
+            new_ease = max(1.3, current_ease - 0.15)
+
+        elif payload.rating == "medium":
+            new_interval = int(current_interval * current_ease)
+            # ease factor ne change pas
+
+        elif payload.rating == "easy":
+            new_interval = int(current_interval * current_ease * 1.3)
+            new_ease = current_ease + 0.15
+
+        # 3. Mettre à jour la carte
+        card.interval = max(1, new_interval) # Jamais moins de 1 jour
+        card.ease_factor = new_ease
+        card.next_review = datetime.utcnow() + timedelta(days=card.interval)
+
+        db.commit()
+        db.refresh(card) # Important pour rafraîchir l'objet
         db.close()
-        raise HTTPException(status_code=404, detail="Card not found")
 
-    if payload.rating == "forgot":
-        card.interval = 1
-        card.ease_factor = max(1.3, card.ease_factor - 0.2)
-    elif payload.rating == "hard":
-        card.interval = int(card.interval * 1.2)
-        card.ease_factor = max(1.3, card.ease_factor - 0.15)
-    elif payload.rating == "medium":
-        card.interval = int(card.interval * card.ease_factor)
-    elif payload.rating == "easy":
-        card.interval = int(card.interval * card.ease_factor * 1.3)
-        card.ease_factor += 0.15
+        return {"msg": "Review saved", "next_date": card.next_review}
 
-    # On s'assure que interval est bien un entier
-    current_interval = int(card.interval) if card.interval else 1
-    card.next_review = datetime.utcnow() + timedelta(days=current_interval)
-    
-    db.commit()
-    db.close()
-    return {"msg": "Review saved", "next_date": card.next_review}
+    except Exception as e:
+        # En cas de crash, on l'affiche dans le terminal backend pour comprendre
+        print(f"ERREUR CRITIQUE DANS REVIEW: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
