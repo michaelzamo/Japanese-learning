@@ -2,8 +2,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from janome.tokenizer import Tokenizer
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timedelta
+import uuid
 
-# --- CONFIGURATION BASE DE DONNÉES (SQLite pour l'instant) ---
+# --- CONFIGURATION BASE DE DONNÉES (SQLite) ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./vocab.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -15,19 +20,20 @@ class Card(Base):
     id = Column(String, primary_key=True, index=True)
     word = Column(String, index=True)
     reading = Column(String)
-    meaning = Column(String)  # Pour stocker la définition
+    meaning = Column(String)
     
     # Champs SRS (Répétition Espacée)
-    interval = Column(Integer, default=1)   # Jours avant prochaine révision
-    ease_factor = Column(Float, default=2.5) # Facilité (2.5 est le standard SM-2)
-    next_review = Column(DateTime, default=datetime.utcnow) # Date prochaine révision
+    interval = Column(Integer, default=1)
+    ease_factor = Column(Float, default=2.5)
+    next_review = Column(DateTime, default=datetime.utcnow)
 
+# Création automatique des tables
 Base.metadata.create_all(bind=engine)
 
 # --- API ---
 app = FastAPI()
 
-# Configuration CORS
+# Configuration CORS (Indispensable pour que le frontend communique)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,10 +41,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialisation de Janome (plus simple que Fugashi)
+# Moteur d'analyse japonais (Janome)
 tokenizer = Tokenizer()
 
-# Modèles Pydantic (Validation des données reçues)
+# Modèles Pydantic
 class TextPayload(BaseModel):
     content: str
 
@@ -51,28 +57,76 @@ class ReviewPayload(BaseModel):
     card_id: str
     rating: str  # "easy", "medium", "hard", "forgot"
 
-# 1. Analyse du texte (comme avant)
+# 1. Endpoint d'analyse
 @app.post("/analyze")
 async def analyze_text(payload: TextPayload):
     words = []
-    # Janome découpe le texte
+    # Janome tokenization
     for token in tokenizer.tokenize(payload.content):
-        # Janome renvoie la grammaire sous forme de liste séparée par des virgules
-        # Ex: "Nom,Général,*,*,*,*,Livre,Hon,Hon"
         part_of_speech = token.part_of_speech.split(',')[0]
-        
-        # Gestion de la lecture (parfois Janome ne la trouve pas, on met la surface par défaut)
         reading = token.reading if token.reading != '*' else token.surface
-
         words.append({
-            "surface": token.surface,       # Le mot affiché
-            "lemma": token.base_form,       # La forme du dictionnaire
-            "reading": reading,             # La prononciation (Katakana)
-            "pos": part_of_speech,          # Nature (Nom, Verbe...)
+            "surface": token.surface,
+            "lemma": token.base_form,
+            "reading": reading,
+            "pos": part_of_speech,
         })
     return {"tokens": words}
 
-@app.get("/")
-def health_check():
-    return {"status": "online", "engine": "janome"}
+# 2. Créer une nouvelle carte
+@app.post("/cards")
+def create_card(card: NewCard):
+    db = SessionLocal()
+    existing = db.query(Card).filter(Card.word == card.word).first()
+    if existing:
+        db.close()
+        return {"msg": "Mot déjà dans la liste", "id": existing.id}
+    
+    new_card = Card(
+        id=str(uuid.uuid4()),
+        word=card.word,
+        reading=card.reading,
+        meaning=card.meaning,
+        next_review=datetime.utcnow()
+    )
+    db.add(new_card)
+    db.commit()
+    db.refresh(new_card)
+    db.close()
+    return new_card
 
+# 3. Récupérer les révisions du jour
+@app.get("/reviews")
+def get_reviews():
+    db = SessionLocal()
+    now = datetime.utcnow()
+    reviews = db.query(Card).filter(Card.next_review <= now).all()
+    db.close()
+    return reviews
+
+# 4. Soumettre une révision (SRS)
+@app.post("/review")
+def submit_review(payload: ReviewPayload):
+    db = SessionLocal()
+    card = db.query(Card).filter(Card.id == payload.card_id).first()
+    if not card:
+        db.close()
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    if payload.rating == "forgot":
+        card.interval = 1
+        card.ease_factor = max(1.3, card.ease_factor - 0.2)
+    elif payload.rating == "hard":
+        card.interval = int(card.interval * 1.2)
+        card.ease_factor = max(1.3, card.ease_factor - 0.15)
+    elif payload.rating == "medium":
+        card.interval = int(card.interval * card.ease_factor)
+    elif payload.rating == "easy":
+        card.interval = int(card.interval * card.ease_factor * 1.3)
+        card.ease_factor += 0.15
+
+    card.next_review = datetime.utcnow() + timedelta(days=card.interval)
+    
+    db.commit()
+    db.close()
+    return {"msg": "Review saved", "next_date": card.next_review}
