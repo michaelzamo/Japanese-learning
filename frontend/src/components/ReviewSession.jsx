@@ -47,6 +47,7 @@ const ReviewSession = () => {
       }
     } catch (error) {
       console.error("Erreur de sauvegarde:", error);
+      alert("Erreur technique : Regarde la console (F12) pour les détails."); // <-- Ajout
     }
   };
 
