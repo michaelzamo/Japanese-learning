@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+fugashi  # Un wrapper Python excellent pour MeCab
+ipadic   # Le dictionnaire japonais
+sqlalchemy # Pour la base de données
+psycopg2-binary # Pour PostgreSQL sur Render
