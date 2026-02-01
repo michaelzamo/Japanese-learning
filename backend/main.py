@@ -125,7 +125,9 @@ def submit_review(payload: ReviewPayload):
         card.interval = int(card.interval * card.ease_factor * 1.3)
         card.ease_factor += 0.15
 
-    card.next_review = datetime.utcnow() + timedelta(days=card.interval)
+    # On s'assure que interval est bien un entier
+    current_interval = int(card.interval) if card.interval else 1
+    card.next_review = datetime.utcnow() + timedelta(days=current_interval)
     
     db.commit()
     db.close()
