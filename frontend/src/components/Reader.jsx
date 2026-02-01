@@ -2,7 +2,26 @@ import React, { useState } from 'react';
 
 const Reader = ({ tokens }) => {
   const [selectedWord, setSelectedWord] = useState(null);
-
+const addToSRS = async (word) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/cards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: word.surface,
+          reading: word.reading,
+          meaning: "Définition à ajouter manuellement pour l'instant" 
+        }),
+      });
+      if (response.ok) {
+        alert(`"${word.surface}" ajouté aux révisions !`);
+        setSelectedWord(null); // Ferme le popup
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur de connexion au serveur");
+    }
+};
   return (
     <div className="p-6 leading-loose text-xl bg-white rounded-lg shadow">
       {/* Affichage du texte segmenté */}
@@ -33,12 +52,12 @@ const Reader = ({ tokens }) => {
             </div>
 
             <div className="mt-6 flex flex-col gap-2">
-              <button 
-                onClick={() => console.log("Ajout au SRS:", selectedWord)}
-                className="bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
-              >
-                Ajouter à mes révisions
-              </button>
+<button 
+  onClick={() => addToSRS(selectedWord)}
+  className="bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
+>
+  Ajouter à mes révisions
+</button>
               <button 
                 onClick={() => setSelectedWord(null)}
                 className="text-gray-500 text-sm py-1"
