@@ -28,6 +28,13 @@ class Card(Base):
     ease_factor = Column(Float, default=2.5)
     next_review = Column(DateTime, default=datetime.utcnow)
 
+class Text(Base):
+    __tablename__ = "texts"
+    id = Column(String, primary_key=True, index=True)
+    title = Column(String)
+    content = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Création automatique des tables
 Base.metadata.create_all(bind=engine)
 
@@ -58,6 +65,10 @@ class ReviewPayload(BaseModel):
     card_id: str
     rating: str  # "easy", "medium", "hard", "forgot"
 
+class TextSavePayload(BaseModel):
+    title: str
+    content: str
+    
 # 1. Endpoint d'analyse
 @app.post("/analyze")
 async def analyze_text(payload: TextPayload):
@@ -181,3 +192,27 @@ def get_definition(word: str):
     except Exception as e:
         print(f"Erreur Jisho: {e}")
         return {"definition": "Erreur de connexion"}
+
+# 6. Sauvegarder un texte
+@app.post("/texts")
+def save_text(payload: TextSavePayload):
+    db = SessionLocal()
+    new_text = Text(
+        id=str(uuid.uuid4()),
+        title=payload.title if payload.title else "Texte sans titre",
+        content=payload.content,
+        created_at=datetime.utcnow()
+    )
+    db.add(new_text)
+    db.commit()
+    db.close()
+    return {"msg": "Texte sauvegardé", "id": new_text.id}
+
+# 7. Récupérer tous les textes (Bibliothèque)
+@app.get("/texts")
+def get_texts():
+    db = SessionLocal()
+    # On récupère les textes du plus récent au plus ancien
+    texts = db.query(Text).order_by(Text.created_at.desc()).all()
+    db.close()
+    return texts
