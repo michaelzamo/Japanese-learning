@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
 import uuid
+import requests
 
 # --- CONFIGURATION BASE DE DONNÉES (SQLite) ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./vocab.db"
@@ -155,3 +156,28 @@ def submit_review(payload: ReviewPayload):
         # En cas de crash, on l'affiche dans le terminal backend pour comprendre
         print(f"ERREUR CRITIQUE DANS REVIEW: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# 5. Récupérer la définition via Jisho.org
+@app.get("/definition")
+def get_definition(word: str):
+    try:
+        # On interroge l'API publique de Jisho
+        url = f"https://jisho.org/api/v1/search/words?keyword={word}"
+        response = requests.get(url)
+        data = response.json()
+        
+        # On essaie d'extraire la première définition
+        if data['meta']['status'] == 200 and len(data['data']) > 0:
+            first_result = data['data'][0]
+            
+            # On récupère les sens en anglais
+            senses = first_result['senses'][0]['english_definitions']
+            definition = ", ".join(senses)
+            
+            return {"definition": definition}
+        else:
+            return {"definition": "Définition non trouvée"}
+            
+    except Exception as e:
+        print(f"Erreur Jisho: {e}")
+        return {"definition": "Erreur de connexion"}
