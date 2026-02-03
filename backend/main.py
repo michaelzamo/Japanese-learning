@@ -1,11 +1,15 @@
-from fastapi import FastAPI, HTTPException, Depends  # <--- Ajoute Dependsfrom pydantic import BaseModel
+import os
+import uuid
+import requests
+from datetime import datetime, timedelta  # <--- C'est cette ligne qui manquait !
+
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from janome.tokenizer import Tokenizer
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session     # <--- Ajoute Sessionfrom datetime import datetime, timedelta
-import uuid
-import requests
+from sqlalchemy.orm import sessionmaker, Session
 
 # --- CONFIGURATION BASE DE DONNÉES (SQLite) ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./vocab.db"
