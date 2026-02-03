@@ -6,14 +6,19 @@ from datetime import datetime, timedelta  # <--- C'est cette ligne qui manquait 
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from janome.tokenizer import Tokenizer
+from sudachipy import tokenizer
+from sudachipy import dictionary
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
 # --- CONFIGURATION BASE DE DONNÉES (SQLite) ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./vocab.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+if "sqlite" in DATABASE_URL:
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # OPTIMISATION RAM : on limite le pool à 5 connexions max
+    engine = create_engine(DATABASE_URL, pool_size=5, max_overflow=0)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -59,8 +64,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Moteur d'analyse japonais (Janome)
-tokenizer = Tokenizer()
+# Configuration Sudachi (Mode A = découpage court, C = découpage long. On prend C pour ressembler à Janome)
+tokenizer_obj = dictionary.Dictionary(dict="small").create()
+mode = tokenizer.Tokenizer.SplitMode.C
 
 # Modèles Pydantic
 class TextPayload(BaseModel):
@@ -82,16 +88,23 @@ class TextSavePayload(BaseModel):
 # 1. Endpoint d'analyse
 @app.post("/analyze")
 async def analyze_text(payload: TextPayload):
-    # (Pas besoin de DB ici, donc pas de changement, sauf si tu veux standardiser)
     words = []
-    for token in tokenizer.tokenize(payload.content):
-        part_of_speech = token.part_of_speech.split(',')[0]
-        reading = token.reading if token.reading != '*' else token.surface
+    # Analyse avec Sudachi
+    tokens = tokenizer_obj.tokenize(payload.content, mode)
+
+    for token in tokens:
+        # Sudachi renvoie les POS sous forme de liste, on prend le premier élément
+        pos = token.part_of_speech()[0]
+
+        # On ignore les espaces et caractères invisibles
+        if pos == "Whitespace":
+            continue
+
         words.append({
-            "surface": token.surface,
-            "lemma": token.base_form,
-            "reading": reading,
-            "pos": part_of_speech,
+            "surface": token.surface(),
+            "lemma": token.dictionary_form(),
+            "reading": token.reading_form(), # Sudachi donne la lecture en Katakana
+            "pos": pos,
         })
     return {"tokens": words}
 
