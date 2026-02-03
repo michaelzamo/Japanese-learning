@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-janome
+sudachipy
+sudachidict_small
 pydantic
 sqlalchemy
 psycopg2-binary
