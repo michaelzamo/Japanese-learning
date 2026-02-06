@@ -34,12 +34,13 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    // H-FULL + FLEX COL : Prend tout l'espace du parent
+    // H-FULL est obligatoire pour remplir le parent
     <div className="h-full w-full flex flex-col bg-white relative">
       
-      {/* 1. TEXTE (HAUT) */}
-      {/* flex-1 : Prend tout l'espace disponible */}
-      {/* min-h-0 : LE SECRET pour que le scroll fonctionne dans Flexbox */}
+      {/* ZONE 1 : LE TEXTE */}
+      {/* flex-1 : Prend tout l'espace */}
+      {/* min-h-0 : Force le navigateur à accepter de réduire cette zone si besoin (débloque le scroll) */}
+      {/* overflow-y-auto : Active la scrollbar */}
       <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 bg-white transition-all">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
@@ -58,13 +59,12 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Espace vide en bas pour pouvoir scroller jusqu'au dernier mot confortablement */}
-        <div className="h-32"></div>
+        {/* Padding géant en bas pour que le dernier mot ne soit jamais caché derrière le panneau */}
+        <div className="h-40"></div>
       </div>
 
-      {/* 2. PANNEAU (BAS) */}
-      {/* h-72 : Hauteur fixe (environ 300px) */}
-      {/* flex-none : Ne s'écrase jamais */}
+      {/* ZONE 2 : LE PANNEAU */}
+      {/* flex-none : Garde sa taille fixe */}
       {selectedWord && (
         <div className="flex-none h-72 bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col">
           
