@@ -1,17 +1,13 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const Reader = ({ tokens }) => {
   const [selectedWord, setSelectedWord] = useState(null);
   const [definition, setDefinition] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // Référence pour scroller automatiquement vers la définition si besoin
-  const panelRef = useRef(null);
 
   const handleWordClick = (token) => {
     if (selectedWord === token) {
-      setSelectedWord(null); // On ferme si on reclique dessus
+      setSelectedWord(null); 
       return;
     }
     setSelectedWord(token);
@@ -56,14 +52,12 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    // CONTENEUR PRINCIPAL : Hauteur fixe calculée (100% écran - Header - Marges)
-    // Cela empêche la page entière de scroller.
-    <div className="flex flex-col h-[calc(100vh-140px)] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="flex flex-col h-full w-full">
       
       {/* ZONE 1 : LE TEXTE (Partie Haute) */}
-      {/* 'flex-1' signifie qu'elle prend tout l'espace disponible */}
-      {/* 'overflow-y-auto' signifie que la barre de défilement est ICI, pas sur la page */}
-      <div className="flex-1 overflow-y-auto p-8 transition-all duration-300">
+      {/* flex-1 : Prend toute la place disponible */}
+      {/* overflow-y-auto : Barre de défilement UNIQUEMENT sur cette zone */}
+      <div className="flex-1 overflow-y-auto p-6 transition-all duration-300">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isPunctuation = token.pos === "Supplementary symbol" || token.surface === "。";
@@ -84,22 +78,19 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Espace vide en bas pour le confort visuel */}
-        <div className="h-20"></div>
       </div>
 
-      {/* ZONE 2 : PANNEAU D'INFORMATION (Partie Basse) */}
-      {/* S'affiche uniquement si un mot est sélectionné */}
+      {/* ZONE 2 : PANNEAU D'INFORMATION (Partie Basse Fixe) */}
+      {/* Ne s'affiche que si un mot est sélectionné */}
       {selectedWord && (
-        <div 
-            ref={panelRef}
-            className="h-72 flex-shrink-0 bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 flex flex-col animate-slide-up"
-        >
+        <div className="h-64 flex-none bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col animate-slide-up">
+          
           {/* Barre de chargement */}
           {loading && <div className="h-1 w-full bg-indigo-200"><div className="h-full bg-indigo-600 animate-pulse w-1/3 mx-auto"></div></div>}
 
+          {/* Contenu Définition (Scrollable aussi si la définition est très longue) */}
           <div className="flex-1 p-6 overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-3">
                 <div className="flex items-baseline gap-3 flex-wrap">
                     <h3 className="text-3xl font-bold text-indigo-700">{selectedWord.surface}</h3>
                     <span className="text-xl font-bold text-gray-400">/</span>
@@ -108,35 +99,20 @@ const Reader = ({ tokens }) => {
                         {selectedWord.pos}
                     </span>
                 </div>
-                <button 
-                    onClick={() => setSelectedWord(null)}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full p-1 transition"
-                >
-                    ✕
-                </button>
+                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
             </div>
-            
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-700 text-lg leading-relaxed">
-                    {loading ? "Recherche de la définition..." : definition}
-                </p>
-            </div>
+            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                {loading ? "Recherche..." : definition}
+            </p>
           </div>
 
-          {/* Boutons d'action en bas du panneau */}
-          <div className="p-4 bg-white border-t border-gray-200 flex justify-end gap-3">
-             <button 
-                onClick={() => setSelectedWord(null)}
-                className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition"
-            >
+          {/* Actions */}
+          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
+             <button onClick={() => setSelectedWord(null)} className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition">
                 Fermer
             </button>
-            <button 
-                onClick={addToSRS}
-                disabled={loading}
-                className="px-8 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2"
-            >
-                <span>🧠</span> Ajouter aux révisions
+            <button onClick={addToSRS} disabled={loading} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2">
+                <span>🧠</span> Ajouter
             </button>
           </div>
         </div>
