@@ -34,13 +34,13 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    // 1. LE CONTENEUR PRINCIPAL (Prend 100% de l'espace donné par App.jsx)
-    <div className="h-full w-full flex flex-col bg-white">
+    // H-FULL est crucial ici pour hériter de la hauteur du parent App.jsx
+    <div className="h-full w-full flex flex-col bg-white relative">
       
-      {/* 2. ZONE DE TEXTE (SCROLLABLE) */}
+      {/* ZONE 1 : LE TEXTE (SCROLLABLE) */}
       {/* flex-1 : Prend tout l'espace disponible */}
-      {/* overflow-y-auto : Si le texte est trop long, la scrollbar apparaît ICI */}
-      <div className="flex-1 overflow-y-auto p-8 bg-white">
+      {/* min-h-0 : Hack Flexbox important pour que le scroll fonctionne dans un flex column */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-8 bg-white">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isSelected = selectedWord === token;
@@ -50,7 +50,7 @@ const Reader = ({ tokens }) => {
                 onClick={() => handleWordClick(token)}
                 className={`
                   cursor-pointer rounded px-1 mx-[1px] inline-block transition-colors
-                  ${isSelected ? 'bg-indigo-600 text-white' : 'hover:bg-indigo-100 hover:text-indigo-700'}
+                  ${isSelected ? 'bg-indigo-600 text-white shadow-sm' : 'hover:bg-indigo-100 hover:text-indigo-700'}
                 `}
               >
                 {token.surface}
@@ -58,35 +58,33 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Marge en bas pour ne pas coller au bord */}
-        <div className="h-10"></div>
+        {/* Marge en bas pour le confort */}
+        <div className="h-20"></div>
       </div>
 
-      {/* 3. ZONE DE DÉFINITION (PANNEAU FIXE EN BAS) */}
-      {/* S'affiche uniquement si un mot est sélectionné */}
-      {/* flex-none : Ne rétrécit pas, ne grandit pas */}
+      {/* ZONE 2 : PANNEAU D'INFORMATION (FIXE EN BAS) */}
       {selectedWord && (
-        <div className="flex-none h-72 border-t-4 border-indigo-100 bg-gray-50 flex flex-col shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-10">
+        <div className="flex-none h-72 bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col">
           
-          {/* Contenu (Scrollable si la définition est longue) */}
+          {/* Contenu Définition (Scrollable) */}
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex justify-between items-start mb-2">
                 <div>
                     <span className="text-3xl font-bold text-indigo-700 mr-3">{selectedWord.surface}</span>
                     <span className="text-xl text-gray-600">【{selectedWord.reading}】</span>
                 </div>
-                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600 font-bold p-2">✕</button>
             </div>
-            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 border rounded-lg">
-                {loading ? "..." : definition}
+            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 border rounded-lg shadow-sm">
+                {loading ? "Recherche..." : definition}
             </p>
           </div>
 
-          {/* Boutons (Fixes en bas du panneau) */}
-          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3">
-             <button onClick={() => setSelectedWord(null)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Fermer</button>
-             <button onClick={addToSRS} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm">
-                + Ajouter
+          {/* Boutons (Fixes) */}
+          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
+             <button onClick={() => setSelectedWord(null)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded font-medium">Fermer</button>
+             <button onClick={addToSRS} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2">
+                <span>🧠</span> Ajouter
              </button>
           </div>
         </div>
