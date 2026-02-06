@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom'; // <--- L'arme secrète
 
 const Reader = ({ tokens }) => {
   const [selectedWord, setSelectedWord] = useState(null);
   const [definition, setDefinition] = useState("Chargement...");
 
-  // Gestion du verrouillage du scroll et chargement
+  // Gestion du verrouillage du scroll
   useEffect(() => {
     if (selectedWord) {
-      // 1. On bloque le scroll
       document.body.style.overflow = 'hidden';
-      // 2. On lance la recherche
       setDefinition("Recherche de la traduction...");
       fetchDefinition(selectedWord.lemma);
     } else {
-      // Si on ferme, on débloque le scroll
       document.body.style.overflow = 'unset';
     }
-    
-    // Nettoyage au cas où le composant est démonté
     return () => { document.body.style.overflow = 'unset'; }
   }, [selectedWord]);
 
@@ -78,19 +74,18 @@ const Reader = ({ tokens }) => {
         </div>
       </div>
 
-      {/* POPUP MODAL (Correction Z-Index et Position) */}
-      {selectedWord && (
+      {/* POPUP MODAL VIA PORTAL */}
+      {/* On téléporte ce morceau de code directement dans le <body> */}
+      {selectedWord && createPortal(
         <div 
-            className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
             onClick={() => setSelectedWord(null)}
         >
-          
           {/* Contenu de la carte */}
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()} // Empêche de fermer si on clique DANS la carte
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()} 
           >
-            
             {/* En-tête coloré */}
             <div className="bg-indigo-600 p-6 text-white">
                 <div className="flex justify-between items-start">
@@ -106,8 +101,8 @@ const Reader = ({ tokens }) => {
             
             {/* Corps de la définition */}
             <div className="p-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6 min-h-[80px] max-h-[200px] overflow-y-auto">
-                    <p className="text-gray-700 text-lg leading-relaxed">{definition}</p>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6 min-h-[80px] max-h-[300px] overflow-y-auto">
+                    <p className="text-gray-700 text-lg leading-relaxed font-sans">{definition}</p>
                 </div>
 
                 <div className="grid gap-3">
@@ -126,7 +121,8 @@ const Reader = ({ tokens }) => {
                 </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body // <--- C'est ici que la magie opère : on attache au BODY
       )}
     </>
   );
