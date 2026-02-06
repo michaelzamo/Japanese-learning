@@ -71,52 +71,50 @@ function App() {
     setCurrentTextId(null); 
   };
 
-  // Helper pour le style des boutons de navigation
+  // Helper simplifié pour le style des boutons
   const getNavClass = (viewName) => {
-    const baseClass = "px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 cursor-pointer";
+    const baseClass = "px-3 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap";
     const activeClass = "bg-indigo-600 text-white shadow-md transform scale-105";
-    const inactiveClass = "text-gray-500 hover:bg-gray-100 hover:text-indigo-600";
+    const inactiveClass = "text-gray-600 hover:bg-gray-100 hover:text-indigo-600";
     
-    // Cas spécial pour le bouton 'Nouveau'
-    if (viewName === 'new') {
-        if (currentView === 'reader' && currentTextId === null && tokens.length === 0) return `${baseClass} ${activeClass}`;
-        return `${baseClass} ${inactiveClass}`;
-    }
-
+    // Si on est sur le reader (que ce soit nouveau ou édition), le bouton Nouveau est actif par défaut si on n'est pas ailleurs
+    if (viewName === 'reader' && currentView === 'reader') return `${baseClass} ${activeClass}`;
     if (currentView === viewName) return `${baseClass} ${activeClass}`;
+    
     return `${baseClass} ${inactiveClass}`;
   };
 
   return (
-    // 1. CONTENEUR GLOBAL (Fixe à 100% de l'écran, pas de scroll ici)
+    // 1. CONTENEUR GLOBAL (Fixe à 100% de l'écran, pas de scroll global)
     <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
       
-      {/* 2. BARRE DE NAVIGATION (Fixe) */}
+      {/* 2. BARRE DE NAVIGATION (Toujours visible) */}
       <nav className="flex-none h-16 bg-white shadow-sm border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
+            {/* Logo */}
             <span 
                 onClick={handleNewText}
-                className="font-black text-2xl text-indigo-600 cursor-pointer tracking-tight"
+                className="font-black text-xl md:text-2xl text-indigo-600 cursor-pointer tracking-tight"
             >
                 🇯🇵 JapaLearn
             </span>
+
+            {/* Onglets (Texte toujours visible) */}
             <div className="flex space-x-2">
-              <button onClick={handleNewText} className={getNavClass('new')}>
-                📝 <span className="hidden md:inline">Nouveau</span>
+              <button onClick={handleNewText} className={getNavClass('reader')}>
+                📝 Nouveau
               </button>
               <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>
-                📚 <span className="hidden md:inline">Bibliothèque</span>
+                📚 Bibliothèque
               </button>
               <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>
-                🧠 <span className="hidden md:inline">Révisions</span>
+                🧠 Révisions
               </button>
             </div>
         </div>
       </nav>
 
       {/* 3. ZONE DE CONTENU PRINCIPAL */}
-      {/* flex-1 : Prend tout l'espace restant */}
-      {/* overflow-hidden : Empêche le contenu de déborder sur le body */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 overflow-hidden relative">
         
         {/* --- VUE LECTEUR (Éditeur ou Reader) --- */}
@@ -181,8 +179,8 @@ function App() {
 
         {/* --- VUE BIBLIOTHÈQUE --- */}
         {currentView === 'library' && (
-            // Conteneur scrollable indépendant
-            <div className="h-full overflow-y-auto pr-2 pb-10">
+            // Conteneur scrollable indépendant avec padding en bas pour ne pas être coupé
+            <div className="h-full overflow-y-auto pr-2 pb-20">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2 sticky top-0 bg-gray-50 py-2 z-10">
                     📚 Ma Bibliothèque
                 </h2>
@@ -193,7 +191,7 @@ function App() {
         {/* --- VUE RÉVISIONS --- */}
         {currentView === 'reviews' && (
           // Conteneur scrollable indépendant
-          <div className="h-full overflow-y-auto pr-2 pb-10">
+          <div className="h-full overflow-y-auto pr-2 pb-20">
               <ReviewSession />
           </div>
         )}
