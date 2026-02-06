@@ -52,11 +52,11 @@ const Reader = ({ tokens }) => {
   };
 
   return (
+    // Structure FLEX COLUMN qui prend 100% de la hauteur du parent
     <div className="flex flex-col h-full w-full">
       
-      {/* ZONE 1 : LE TEXTE (Partie Haute) */}
-      {/* flex-1 : Prend toute la place disponible */}
-      {/* overflow-y-auto : Barre de défilement UNIQUEMENT sur cette zone */}
+      {/* ZONE 1 : LE TEXTE (SCROLLABLE) */}
+      {/* C'est la seule zone qui a le droit de scroller */}
       <div className="flex-1 overflow-y-auto p-6 transition-all duration-300">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
@@ -78,18 +78,22 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
+        {/* Petit espace vide à la fin pour ne pas que le dernier mot soit collé au bord */}
+        <div className="h-10"></div>
       </div>
 
-      {/* ZONE 2 : PANNEAU D'INFORMATION (Partie Basse Fixe) */}
-      {/* Ne s'affiche que si un mot est sélectionné */}
+      {/* ZONE 2 : PANNEAU D'INFORMATION (FIXE EN BAS) */}
+      {/* Il est dans le flux Flexbox, donc il "pousse" le texte vers le haut */}
       {selectedWord && (
-        <div className="h-64 flex-none bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col animate-slide-up">
+        <div className="flex-none h-72 bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-20 flex flex-col animate-slide-up">
           
           {/* Barre de chargement */}
           {loading && <div className="h-1 w-full bg-indigo-200"><div className="h-full bg-indigo-600 animate-pulse w-1/3 mx-auto"></div></div>}
 
-          {/* Contenu Définition (Scrollable aussi si la définition est très longue) */}
+          {/* Contenu Définition (Lui aussi peut scroller si la définition est immense) */}
           <div className="flex-1 p-6 overflow-y-auto">
+            
+            {/* Header du mot */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-baseline gap-3 flex-wrap">
                     <h3 className="text-3xl font-bold text-indigo-700">{selectedWord.surface}</h3>
@@ -99,19 +103,35 @@ const Reader = ({ tokens }) => {
                         {selectedWord.pos}
                     </span>
                 </div>
-                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+                <button 
+                    onClick={() => setSelectedWord(null)}
+                    className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition"
+                >
+                    ✕
+                </button>
             </div>
-            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                {loading ? "Recherche..." : definition}
-            </p>
+
+            {/* Texte de définition */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <p className="text-gray-700 text-lg leading-relaxed">
+                    {loading ? "Recherche de la définition..." : definition}
+                </p>
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
-             <button onClick={() => setSelectedWord(null)} className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition">
+          {/* Actions (Toujours visibles en bas du panneau) */}
+          <div className="p-4 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
+             <button 
+                onClick={() => setSelectedWord(null)}
+                className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition"
+            >
                 Fermer
             </button>
-            <button onClick={addToSRS} disabled={loading} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2">
+            <button 
+                onClick={addToSRS}
+                disabled={loading}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2"
+            >
                 <span>🧠</span> Ajouter
             </button>
           </div>
