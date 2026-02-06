@@ -1,150 +1,124 @@
 import React, { useState } from 'react';
-import Reader from './components/Reader';
-import ReviewSession from './components/ReviewSession';
-import Library from './components/Library';
 
-function App() {
-  const [currentView, setCurrentView] = useState('reader'); 
-  const [input, setInput] = useState("");
-  const [title, setTitle] = useState("");
-  const [currentTextId, setCurrentTextId] = useState(null); 
-  const [tokens, setTokens] = useState([]);
+const Reader = ({ tokens }) => {
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [definition, setDefinition] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleAnalyze = async () => {
-    if (!input.trim()) return;
+  const handleWordClick = (token) => {
+    if (selectedWord === token) {
+      setSelectedWord(null); 
+      return;
+    }
+    setSelectedWord(token);
+    setLoading(true);
+    fetchDefinition(token.lemma);
+  };
+
+  const fetchDefinition = async (word) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: input }),
-      });
-      const data = await response.json();
-      setTokens(data.tokens);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/definition?word=${word}`);
+      const data = await res.json();
+      setDefinition(data.definition);
     } catch (err) {
-      alert("Erreur de connexion au serveur");
+      setDefinition("Impossible de charger la définition");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSaveText = async () => {
-    if (!input.trim()) return alert("Le texte est vide !");
+  const addToSRS = async () => {
+    if (!selectedWord) return;
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/texts`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/cards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id: currentTextId, 
-          title: title || "Texte sans titre", 
-          content: input 
+        body: JSON.stringify({
+          word: selectedWord.surface,
+          reading: selectedWord.reading,
+          meaning: definition 
         }),
       });
       if (response.ok) {
-        const data = await response.json();
-        setCurrentTextId(data.id); 
-        alert(currentTextId ? "Texte mis à jour !" : "Nouveau texte sauvegardé !");
+        alert(`"${selectedWord.surface}" ajouté aux révisions !`);
+        setSelectedWord(null);
+      } else {
+        alert("Ce mot est déjà dans ta liste.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de la sauvegarde");
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur de connexion");
     }
   };
 
-  const loadTextFromLibrary = (textObject) => {
-    setInput(textObject.content);
-    setTitle(textObject.title);
-    setCurrentTextId(textObject.id); 
-    setTokens([]); 
-    setCurrentView('reader');
-  };
-
-  const handleNewText = () => {
-    setCurrentView('reader');
-    setInput("");
-    setTitle("");
-    setTokens([]);
-    setCurrentTextId(null); 
-  };
-
-  const getNavClass = (viewName) => {
-    const baseClass = "px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2";
-    const activeClass = "bg-indigo-600 text-white shadow-md transform scale-105";
-    const inactiveClass = "text-gray-500 hover:bg-gray-100 hover:text-indigo-600";
-    if (viewName === 'new' && currentView === 'reader' && currentTextId === null) return `${baseClass} ${activeClass}`;
-    if (currentView === viewName) return `${baseClass} ${activeClass}`;
-    return `${baseClass} ${inactiveClass}`;
-  };
-
   return (
-    // CHANGEMENT MAJEUR ICI : h-screen + overflow-hidden
-    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full w-full">
       
-      {/* Navbar : Flex-none pour qu'elle ne s'écrase pas */}
-      <nav className="flex-none bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 z-50">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <span onClick={handleNewText} className="font-black text-2xl text-indigo-600 cursor-pointer tracking-tight">
-                🇯🇵 JapaLearn
-            </span>
-            <div className="flex space-x-1 md:space-x-2">
-              <button onClick={handleNewText} className={getNavClass('new')}>📝 <span className="hidden md:inline">Nouveau</span></button>
-              <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>📚 <span className="hidden md:inline">Bibliothèque</span></button>
-              <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>🧠 <span className="hidden md:inline">Révisions</span></button>
+      {/* ZONE 1 : LE TEXTE (Partie Haute) */}
+      {/* flex-1 : Prend toute la place disponible */}
+      {/* overflow-y-auto : Barre de défilement UNIQUEMENT sur cette zone */}
+      <div className="flex-1 overflow-y-auto p-6 transition-all duration-300">
+        <div className="text-xl leading-[2.5] font-medium text-gray-800">
+          {tokens.map((token, index) => {
+             const isPunctuation = token.pos === "Supplementary symbol" || token.surface === "。";
+             const isSelected = selectedWord === token;
+
+             return (
+              <span
+                key={index}
+                onClick={() => handleWordClick(token)}
+                className={`
+                  cursor-pointer transition-all duration-150 rounded px-[2px] mx-[1px] inline-block
+                  ${isSelected ? 'bg-indigo-600 text-white shadow-sm scale-105' : ''} 
+                  ${!isPunctuation && !isSelected ? 'hover:bg-indigo-100 hover:text-indigo-700' : ''}
+                `}
+              >
+                {token.surface}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ZONE 2 : PANNEAU D'INFORMATION (Partie Basse Fixe) */}
+      {/* Ne s'affiche que si un mot est sélectionné */}
+      {selectedWord && (
+        <div className="h-64 flex-none bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col animate-slide-up">
+          
+          {/* Barre de chargement */}
+          {loading && <div className="h-1 w-full bg-indigo-200"><div className="h-full bg-indigo-600 animate-pulse w-1/3 mx-auto"></div></div>}
+
+          {/* Contenu Définition (Scrollable aussi si la définition est très longue) */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex justify-between items-start mb-3">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                    <h3 className="text-3xl font-bold text-indigo-700">{selectedWord.surface}</h3>
+                    <span className="text-xl font-bold text-gray-400">/</span>
+                    <p className="text-xl font-medium text-gray-800">【{selectedWord.reading}】</p>
+                    <span className="bg-white border border-gray-200 text-gray-500 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider shadow-sm">
+                        {selectedWord.pos}
+                    </span>
+                </div>
+                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
             </div>
+            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                {loading ? "Recherche..." : definition}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
+             <button onClick={() => setSelectedWord(null)} className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition">
+                Fermer
+            </button>
+            <button onClick={addToSRS} disabled={loading} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2">
+                <span>🧠</span> Ajouter
+            </button>
           </div>
         </div>
-      </nav>
-
-      {/* Main : Flex-1 pour prendre TOUT le reste de la place + overflow-hidden */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 overflow-hidden flex flex-col">
-        
-        {currentView === 'reader' && (
-          // Le conteneur du lecteur prend toute la hauteur disponible (h-full)
-          <div className="h-full flex flex-col">
-             {!tokens.length ? (
-              // Vue Édition (Scrollable si besoin)
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col gap-4 overflow-y-auto">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-700">{currentTextId ? "✍️ Modification" : "📝 Nouveau texte"}</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleSaveText} className="px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-bold transition">Sauvegarder</button>
-                        <button onClick={handleAnalyze} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition">Analyser</button>
-                    </div>
-                </div>
-                <input type="text" className="w-full p-4 text-xl font-bold border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none bg-gray-50 focus:bg-white" placeholder="Titre..." value={title} onChange={(e) => setTitle(e.target.value)} />
-                <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none resize-none shadow-inner" placeholder="Collez votre texte japonais ici..." value={input} onChange={(e) => setInput(e.target.value)} />
-              </div>
-            ) : (
-              // Vue Lecture (Reader)
-              <div className="h-full flex flex-col">
-                <div className="flex-none flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                    <h1 className="text-lg font-bold text-gray-800 truncate">{title || "Sans titre"}</h1>
-                    <button onClick={() => setTokens([])} className="text-sm text-gray-500 hover:text-indigo-600 font-bold px-3 py-1 rounded-lg hover:bg-gray-50">✏️ Éditer</button>
-                </div>
-                {/* On passe le relais au composant Reader */}
-                <div className="flex-1 overflow-hidden relative bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <Reader tokens={tokens} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Bibliothèque et Révisions doivent aussi scroller indépendamment */}
-        {currentView === 'library' && (
-            <div className="h-full overflow-y-auto">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2">📚 Ma Bibliothèque</h2>
-                <Library onLoadText={loadTextFromLibrary} />
-            </div>
-        )}
-
-        {currentView === 'reviews' && (
-          <div className="h-full overflow-y-auto">
-              <ReviewSession />
-          </div>
-        )}
-
-      </main>
+      )}
     </div>
   );
-}
+};
 
-export default App;
+export default Reader;
