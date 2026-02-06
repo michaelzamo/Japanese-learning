@@ -4,10 +4,7 @@ import ReviewSession from './components/ReviewSession';
 import Library from './components/Library';
 
 function App() {
-  // Navigation : 'reader', 'reviews', 'library'
   const [currentView, setCurrentView] = useState('reader'); 
-  
-  // États pour le lecteur
   const [input, setInput] = useState("");
   const [title, setTitle] = useState("");
   const [currentTextId, setCurrentTextId] = useState(null); 
@@ -29,10 +26,8 @@ function App() {
     }
   };
 
-  // Sauvegarder le texte
   const handleSaveText = async () => {
     if (!input.trim()) return alert("Le texte est vide !");
-    
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/texts`, {
         method: 'POST',
@@ -43,7 +38,6 @@ function App() {
           content: input 
         }),
       });
-      
       if (response.ok) {
         const data = await response.json();
         setCurrentTextId(data.id); 
@@ -61,6 +55,8 @@ function App() {
     setCurrentTextId(textObject.id); 
     setTokens([]); 
     setCurrentView('reader');
+    // Scroll en haut de page automatiquement
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNewText = () => {
@@ -71,28 +67,45 @@ function App() {
     setCurrentTextId(null); 
   };
 
+  // Helper pour les classes des boutons (évite la répétition et le décalage)
+  const getNavClass = (viewName) => {
+    const baseClass = "px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2";
+    const activeClass = "bg-indigo-600 text-white shadow-md transform scale-105";
+    const inactiveClass = "text-gray-500 hover:bg-gray-100 hover:text-indigo-600";
+    
+    // Logique spécifique pour le bouton 'Nouveau' qui doit être actif si on est en mode reader sans ID
+    if (viewName === 'new' && currentView === 'reader' && currentTextId === null) {
+        return `${baseClass} ${activeClass}`;
+    }
+    // Logique pour les autres onglets standards
+    if (currentView === viewName) {
+        return `${baseClass} ${activeClass}`;
+    }
+    return `${baseClass} ${inactiveClass}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
       
-      {/* MENU DE NAVIGATION */}
-      <nav className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* MENU DE NAVIGATION - FIXE EN HAUT */}
+      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             <span 
                 onClick={handleNewText}
-                className="font-bold text-xl text-indigo-600 cursor-pointer flex items-center gap-2"
+                className="font-black text-2xl text-indigo-600 cursor-pointer tracking-tight"
             >
                 🇯🇵 JapaLearn
             </span>
-            <div className="flex space-x-2">
-              <button onClick={handleNewText} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${currentView === 'reader' && currentTextId === null ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}>
-                📝 Nouveau
+            <div className="flex space-x-1 md:space-x-2">
+              <button onClick={handleNewText} className={getNavClass('new')}>
+                📝 <span className="hidden md:inline">Nouveau</span>
               </button>
-              <button onClick={() => setCurrentView('library')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${currentView === 'library' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}>
-                📚 Bibliothèque
+              <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>
+                📚 <span className="hidden md:inline">Bibliothèque</span>
               </button>
-              <button onClick={() => setCurrentView('reviews')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${currentView === 'reviews' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}>
-                🧠 Révisions
+              <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>
+                🧠 <span className="hidden md:inline">Révisions</span>
               </button>
             </div>
           </div>
@@ -100,64 +113,57 @@ function App() {
       </nav>
 
       {/* CONTENU PRINCIPAL */}
-      <main className="flex-grow max-w-6xl mx-auto w-full px-4 py-8">
+      <main className="flex-grow max-w-5xl mx-auto w-full px-4 py-8">
         
         {currentView === 'reader' && (
           <div className="h-full">
              {!tokens.length ? (
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">
-                        {currentTextId ? "Modifier le texte" : "Écrire ou coller un texte"}
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <h2 className="text-xl font-bold text-gray-700">
+                        {currentTextId ? "✍️ Modification" : "📝 Nouveau texte"}
                     </h2>
-                    {/* Actions rapides en haut */}
-                    <div className="flex gap-3">
-                        <button
-                        onClick={handleSaveText}
-                        className="px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-medium transition"
-                        >
-                        Sauvegarder brouillon
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <button onClick={handleSaveText} className="flex-1 md:flex-none px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-bold transition">
+                            Sauvegarder
                         </button>
-                        <button
-                        onClick={handleAnalyze}
-                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition transform active:scale-95"
-                        >
-                        Analyser 🚀
+                        <button onClick={handleAnalyze} className="flex-1 md:flex-none px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition transform active:scale-95">
+                            Analyser
                         </button>
                     </div>
                 </div>
                 
-                {/* Champ Titre - Plus grand et plus visible */}
                 <input
                   type="text"
-                  className="w-full p-4 text-xl font-bold text-gray-800 border-2 border-transparent hover:border-gray-200 focus:border-indigo-500 rounded-xl focus:outline-none focus:ring-0 transition placeholder-gray-300 mb-4 bg-gray-50 focus:bg-white"
-                  placeholder="Titre de votre texte..."
+                  className="w-full p-4 text-xl font-bold text-gray-800 border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:outline-none transition placeholder-gray-300 bg-gray-50 focus:bg-white"
+                  placeholder="Titre..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
 
-                {/* Champ Texte - Beaucoup plus grand et lisible */}
-                <div className="flex-grow relative">
-                    <textarea
-                    className="w-full h-[60vh] p-6 text-lg leading-relaxed text-gray-700 border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition resize-y font-medium"
-                    placeholder="Collez votre texte japonais ici (Kanji, Hiragana, Katakana)..."
+                <textarea
+                    className="w-full h-[60vh] p-6 text-lg leading-loose text-gray-700 border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:outline-none transition resize-y font-medium shadow-inner"
+                    placeholder="Collez votre texte japonais ici..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    />
-                </div>
+                />
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-6 sticky top-20 z-20 bg-gray-50/90 backdrop-blur py-2">
+              <div className="max-w-4xl mx-auto animate-fade-in">
+                <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 sticky top-20 z-30">
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Lecture en cours</span>
+                        <h1 className="text-xl font-bold text-gray-800 truncate max-w-xs md:max-w-md">{title || "Sans titre"}</h1>
+                    </div>
                     <button 
                         onClick={() => setTokens([])} 
-                        className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition font-medium px-4 py-2 rounded-lg hover:bg-white"
+                        className="text-gray-500 hover:text-indigo-600 transition font-medium px-3 py-1 rounded-lg hover:bg-gray-50 text-sm"
                     >
-                    ← Revenir à l'édition
+                    ✏️ Éditer
                     </button>
-                    <h1 className="text-2xl font-bold text-gray-800 truncate max-w-md">{title}</h1>
-                    <div className="w-24"></div> {/* Spacer pour équilibrer */}
                 </div>
+                
+                {/* Le composant Reader gère l'affichage du texte */}
                 <Reader tokens={tokens} />
               </div>
             )}
@@ -166,7 +172,7 @@ function App() {
 
         {currentView === 'library' && (
             <div className="max-w-6xl mx-auto">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2">Ma Bibliothèque</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2 flex items-center gap-2">📚 Ma Bibliothèque</h2>
                 <Library onLoadText={loadTextFromLibrary} />
             </div>
         )}
