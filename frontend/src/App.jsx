@@ -10,7 +10,7 @@ function App() {
   const [currentTextId, setCurrentTextId] = useState(null); 
   const [tokens, setTokens] = useState([]);
 
-  // --- ACTIONS (Identiques à avant) ---
+  // --- ACTIONS ---
   const handleAnalyze = async () => {
     if (!input.trim()) return;
     try {
@@ -66,10 +66,10 @@ function App() {
   };
 
   return (
-    // CONTENEUR RACINE : h-full force la hauteur à 100% du parent (body)
-    <div className="h-full w-full bg-gray-50 font-sans text-gray-900 flex flex-col">
+    // ROOT: h-screen est plus sûr que h-full pour la racine directe
+    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
       
-      {/* NAVBAR : Flex-none (taille fixe) */}
+      {/* NAVBAR */}
       <nav className="flex-none h-16 bg-white shadow-sm border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
             <span onClick={handleNewText} className="font-black text-xl md:text-2xl text-indigo-600 cursor-pointer">
@@ -83,15 +83,16 @@ function App() {
         </div>
       </nav>
 
-      {/* MAIN : Flex-1 (Prend tout l'espace restant). overflow-hidden ici pour gérer le scroll dans les enfants */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 overflow-hidden relative">
+      {/* MAIN CONTAINER */}
+      {/* min-h-0 est CRUCIAL ici pour que les enfants scrollables fonctionnent dans un flex column */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 overflow-hidden relative min-h-0">
         
-        {/* CAS 1 : LECTEUR (Doit gérer son propre scroll interne pour le Split View) */}
+        {/* VUE LECTEUR */}
         {currentView === 'reader' && (
           <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
              {!tokens.length ? (
-              // ÉDITEUR (Scrollable)
-              <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+              // ÉDITEUR
+              <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
                 <div className="flex-none flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-700">{currentTextId ? "Modification" : "Nouveau texte"}</h2>
                     <div className="flex gap-2">
@@ -100,17 +101,17 @@ function App() {
                     </div>
                 </div>
                 <input type="text" className="flex-none w-full p-4 mb-4 text-xl font-bold border-2 border-gray-100 rounded-xl outline-none" placeholder="Titre..." value={title} onChange={(e) => setTitle(e.target.value)} />
-                <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl outline-none resize-none shadow-inner" placeholder="Collez le texte ici..." value={input} onChange={(e) => setInput(e.target.value)} />
+                <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl outline-none resize-none shadow-inner overflow-y-auto" placeholder="Collez le texte ici..." value={input} onChange={(e) => setInput(e.target.value)} />
               </div>
             ) : (
-              // LECTEUR ANALYSÉ (Split View)
-              <div className="h-full flex flex-col">
+              // LECTEUR / SPLIT VIEW
+              <div className="h-full flex flex-col overflow-hidden">
                 <div className="flex-none h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-6">
                     <h1 className="text-lg font-bold text-gray-800 truncate">{title}</h1>
                     <button onClick={() => setTokens([])} className="text-sm font-bold text-gray-500 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-white">✏️ Éditer</button>
                 </div>
-                {/* Le composant Reader prendra 100% de cet espace */}
-                <div className="flex-1 overflow-hidden relative">
+                {/* On passe le relais au composant Reader qui gère son propre split */}
+                <div className="flex-1 overflow-hidden relative min-h-0">
                     <Reader tokens={tokens} />
                 </div>
               </div>
@@ -118,17 +119,17 @@ function App() {
           </div>
         )}
 
-        {/* CAS 2 & 3 : BIBLIOTHÈQUE & RÉVISIONS (Doivent scroller ici) */}
-        {/* On ajoute 'overflow-y-auto' ici car ce sont des listes qui dépassent l'écran */}
+        {/* VUE BIBLIOTHÈQUE */}
         {currentView === 'library' && (
-            <div className="h-full w-full overflow-y-auto pr-2 pb-20">
+            <div className="h-full w-full overflow-y-auto pr-2 pb-20 scroll-smooth">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 bg-gray-50 py-2 sticky top-0 z-10">📚 Ma Bibliothèque</h2>
                 <Library onLoadText={loadTextFromLibrary} />
             </div>
         )}
 
+        {/* VUE RÉVISIONS */}
         {currentView === 'reviews' && (
-          <div className="h-full w-full overflow-y-auto pr-2 pb-20">
+          <div className="h-full w-full overflow-y-auto pr-2 pb-20 scroll-smooth">
               <ReviewSession />
           </div>
         )}
