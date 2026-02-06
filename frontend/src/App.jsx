@@ -66,8 +66,8 @@ function App() {
   };
 
   return (
-    // ROOT: h-screen est plus sûr que h-full pour la racine directe
-    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
+    // ROOT: Prend tout l'écran, pas de scroll ici.
+    <div className="h-full w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
       
       {/* NAVBAR */}
       <nav className="flex-none h-16 bg-white shadow-sm border-b border-gray-200 z-50">
@@ -84,12 +84,13 @@ function App() {
       </nav>
 
       {/* MAIN CONTAINER */}
-      {/* min-h-0 est CRUCIAL ici pour que les enfants scrollables fonctionnent dans un flex column */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 overflow-hidden relative min-h-0">
+      {/* IMPORTANT : J'ai retiré le padding global (p-4) ici ! */}
+      <main className="flex-1 w-full max-w-7xl mx-auto overflow-hidden relative flex flex-col">
         
         {/* VUE LECTEUR */}
         {currentView === 'reader' && (
-          <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          // On remet un peu de margin (m-4) pour que ce ne soit pas collé, mais on gère la hauteur avec calc
+          <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden m-2 md:m-4">
              {!tokens.length ? (
               // ÉDITEUR
               <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
@@ -105,13 +106,13 @@ function App() {
               </div>
             ) : (
               // LECTEUR / SPLIT VIEW
-              <div className="h-full flex flex-col overflow-hidden">
+              <div className="h-full w-full flex flex-col overflow-hidden">
                 <div className="flex-none h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-6">
                     <h1 className="text-lg font-bold text-gray-800 truncate">{title}</h1>
                     <button onClick={() => setTokens([])} className="text-sm font-bold text-gray-500 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-white">✏️ Éditer</button>
                 </div>
-                {/* On passe le relais au composant Reader qui gère son propre split */}
-                <div className="flex-1 overflow-hidden relative min-h-0">
+                {/* Conteneur du Reader */}
+                <div className="flex-1 overflow-hidden relative w-full h-full">
                     <Reader tokens={tokens} />
                 </div>
               </div>
@@ -119,17 +120,17 @@ function App() {
           </div>
         )}
 
-        {/* VUE BIBLIOTHÈQUE */}
+        {/* VUE BIBLIOTHÈQUE - Ici on ajoute du padding car c'est une page normale */}
         {currentView === 'library' && (
-            <div className="h-full w-full overflow-y-auto pr-2 pb-20 scroll-smooth">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 bg-gray-50 py-2 sticky top-0 z-10">📚 Ma Bibliothèque</h2>
+            <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 sticky top-0 bg-gray-50 py-2 z-10">📚 Ma Bibliothèque</h2>
                 <Library onLoadText={loadTextFromLibrary} />
             </div>
         )}
 
-        {/* VUE RÉVISIONS */}
+        {/* VUE RÉVISIONS - Ici on ajoute du padding */}
         {currentView === 'reviews' && (
-          <div className="h-full w-full overflow-y-auto pr-2 pb-20 scroll-smooth">
+          <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
               <ReviewSession />
           </div>
         )}
