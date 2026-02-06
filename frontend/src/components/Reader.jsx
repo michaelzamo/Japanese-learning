@@ -34,14 +34,13 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    // Structure Flex Verticale qui prend 100% de la hauteur disponible
-    <div className="h-full w-full flex flex-col bg-white">
+    // H-FULL + FLEX COL : Prend tout l'espace du parent
+    <div className="h-full w-full flex flex-col bg-white relative">
       
-      {/* ZONE 1 : LE TEXTE (HAUT) */}
-      {/* flex-1 : Prend tout l'espace par défaut */}
-      {/* min-h-0 : OBLIGATOIRE pour que le scroll interne fonctionne */}
-      {/* overflow-y-auto : La barre de défilement est ici */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-8 bg-white transition-all">
+      {/* 1. TEXTE (HAUT) */}
+      {/* flex-1 : Prend tout l'espace disponible */}
+      {/* min-h-0 : LE SECRET pour que le scroll fonctionne dans Flexbox */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 bg-white transition-all">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isSelected = selectedWord === token;
@@ -59,17 +58,16 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Espace vide en bas pour le confort visuel */}
-        <div className="h-20"></div>
+        {/* Espace vide en bas pour pouvoir scroller jusqu'au dernier mot confortablement */}
+        <div className="h-32"></div>
       </div>
 
-      {/* ZONE 2 : PANNEAU (BAS) */}
-      {/* S'affiche uniquement si un mot est cliqué */}
-      {/* flex-none : Garde sa taille fixe, ne s'écrase pas */}
+      {/* 2. PANNEAU (BAS) */}
+      {/* h-72 : Hauteur fixe (environ 300px) */}
+      {/* flex-none : Ne s'écrase jamais */}
       {selectedWord && (
         <div className="flex-none h-72 bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col">
           
-          {/* Contenu Définition */}
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex justify-between items-start mb-2">
                 <div>
@@ -83,7 +81,6 @@ const Reader = ({ tokens }) => {
             </p>
           </div>
 
-          {/* Boutons Actions */}
           <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
              <button onClick={() => setSelectedWord(null)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded font-medium">Fermer</button>
              <button onClick={addToSRS} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2">
