@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Reader from './components/Reader';
 import ReviewSession from './components/ReviewSession';
-import Library from './components/Library'; // <--- Import nouveau
+import Library from './components/Library';
 
 function App() {
   // Navigation : 'reader', 'reviews', 'library'
@@ -9,7 +9,8 @@ function App() {
   
   // États pour le lecteur
   const [input, setInput] = useState("");
-  const [title, setTitle] = useState(""); // <--- Nouveau champ titre
+  const [title, setTitle] = useState("");
+  const [currentTextId, setCurrentTextId] = useState(null); // ID du texte en cours (null = nouveau)
   const [tokens, setTokens] = useState([]);
 
   // Analyse du texte
@@ -28,7 +29,7 @@ function App() {
     }
   };
 
-  // Sauvegarder le texte dans la BDD
+  // Sauvegarder le texte (Création ou Mise à jour)
   const handleSaveText = async () => {
     if (!input.trim()) return alert("Le texte est vide !");
     
@@ -37,12 +38,16 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          id: currentTextId, // On envoie l'ID s'il existe
           title: title || "Texte sans titre", 
           content: input 
         }),
       });
+      
       if (response.ok) {
-        alert("Texte sauvegardé dans la bibliothèque !");
+        const data = await response.json();
+        setCurrentTextId(data.id); // On met à jour l'ID avec celui du serveur
+        alert(currentTextId ? "Texte mis à jour !" : "Nouveau texte sauvegardé !");
       }
     } catch (err) {
       console.error(err);
@@ -54,9 +59,18 @@ function App() {
   const loadTextFromLibrary = (textObject) => {
     setInput(textObject.content);
     setTitle(textObject.title);
-    setTokens([]); // On reset l'analyse pour forcer l'utilisateur à cliquer sur Analyser (ou on pourrait lancer l'analyse auto)
+    setCurrentTextId(textObject.id); // On retient que ce texte existe déjà
+    setTokens([]); 
     setCurrentView('reader');
-    // Optionnel : Lancer l'analyse automatiquement ici si tu veux
+  };
+
+  // Réinitialiser pour un nouveau texte
+  const handleNewText = () => {
+    setCurrentView('reader');
+    setInput("");
+    setTitle("");
+    setTokens([]);
+    setCurrentTextId(null); // On oublie l'ID précédent
   };
 
   return (
@@ -67,14 +81,14 @@ function App() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             <span 
-                onClick={() => setCurrentView('reader')}
+                onClick={handleNewText}
                 className="font-bold text-xl text-indigo-600 cursor-pointer"
             >
                 🇯🇵 JapaLearn
             </span>
             <div className="flex space-x-2 md:space-x-4">
-              <button onClick={() => setCurrentView('reader')} className={`px-3 py-2 rounded-md text-sm font-medium transition ${currentView === 'reader' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
-                📖 Lecteur
+              <button onClick={handleNewText} className={`px-3 py-2 rounded-md text-sm font-medium transition ${currentView === 'reader' && currentTextId === null ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                📝 Nouveau Texte
               </button>
               <button onClick={() => setCurrentView('library')} className={`px-3 py-2 rounded-md text-sm font-medium transition ${currentView === 'library' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}>
                 📚 Bibliothèque
@@ -94,7 +108,9 @@ function App() {
           <div>
              {!tokens.length ? (
               <div className="max-w-2xl mx-auto space-y-4 bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-700 mb-2">Nouveau texte</h2>
+                <h2 className="text-lg font-semibold text-gray-700 mb-2">
+                    {currentTextId ? "Modifier le texte" : "Nouveau texte"}
+                </h2>
                 
                 {/* Champ Titre */}
                 <input
@@ -118,7 +134,7 @@ function App() {
                     onClick={handleAnalyze}
                     className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 shadow-md transition"
                     >
-                    Analyser maintenant
+                    Analyser
                     </button>
                     <button
                     onClick={handleSaveText}
@@ -131,10 +147,12 @@ function App() {
             ) : (
               <div className="max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-4">
-                    <button onClick={() => setTokens([])} className="text-indigo-600 underline text-sm hover:text-indigo-800">
-                    ← Modifier le texte
+                    <button 
+                        onClick={() => setTokens([])} 
+                        className="text-indigo-600 underline text-sm hover:text-indigo-800"
+                    >
+                    ← Revenir à l'édition
                     </button>
-                    {/* Petit rappel du titre */}
                     <span className="font-bold text-gray-700">{title}</span>
                 </div>
                 <Reader tokens={tokens} />
