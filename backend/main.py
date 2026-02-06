@@ -1,6 +1,7 @@
 import os
 import uuid
 import requests
+from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -94,6 +95,7 @@ class ReviewPayload(BaseModel):
     rating: str
 
 class TextSavePayload(BaseModel):
+    id: Optional[str] = None # L'ID est optionnel (si présent = mise à jour)
     title: str
     content: str
 
@@ -189,6 +191,18 @@ def submit_review(payload: ReviewPayload, db: Session = Depends(get_db)):
 
 @app.post("/texts")
 def save_text(payload: TextSavePayload, db: Session = Depends(get_db)):
+    # 1. Mise à jour si ID existe
+    if payload.id:
+        existing_text = db.query(Text).filter(Text.id == payload.id).first()
+        if existing_text:
+            existing_text.title = payload.title
+            existing_text.content = payload.content
+            existing_text.created_at = datetime.utcnow() # On remonte le texte en haut de liste
+            db.commit()
+            db.refresh(existing_text)
+            return {"msg": "Texte mis à jour", "id": existing_text.id}
+
+    # 2. Sinon Création
     new_text = Text(
         id=str(uuid.uuid4()),
         title=payload.title,
@@ -197,7 +211,7 @@ def save_text(payload: TextSavePayload, db: Session = Depends(get_db)):
     )
     db.add(new_text)
     db.commit()
-    return {"msg": "Text saved", "id": new_text.id}
+    return {"msg": "Texte sauvegardé", "id": new_text.id}
 
 @app.get("/texts")
 def get_texts(db: Session = Depends(get_db)):
