@@ -1,26 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const Reader = ({ tokens }) => {
   const [selectedWord, setSelectedWord] = useState(null);
   const [definition, setDefinition] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Référence pour scroller automatiquement vers la définition si besoin
+  const panelRef = useRef(null);
 
-  // Fonction appelée au clic sur un mot
   const handleWordClick = (token) => {
-    // Si on clique sur le même mot, on ferme le panneau
-    if (selectedWord && selectedWord === token) {
-      closePanel();
+    if (selectedWord === token) {
+      setSelectedWord(null); // On ferme si on reclique dessus
       return;
     }
-
     setSelectedWord(token);
     setLoading(true);
     fetchDefinition(token.lemma);
-  };
-
-  const closePanel = () => {
-    setSelectedWord(null);
-    setDefinition("");
   };
 
   const fetchDefinition = async (word) => {
@@ -49,7 +44,7 @@ const Reader = ({ tokens }) => {
       });
       if (response.ok) {
         alert(`"${selectedWord.surface}" ajouté aux révisions !`);
-        closePanel(); // On ferme après l'ajout
+        setSelectedWord(null);
       } else {
         alert("Ce mot est déjà dans ta liste.");
       }
@@ -60,13 +55,15 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    <div className="relative">
-      {/* Zone de Texte (Le livre) 
-         Note : pb-80 ajoute un grand espace vide en bas pour que le texte 
-         ne soit jamais caché par le panneau quand on scrolle tout en bas.
-      */}
-      <div className="p-8 leading-[2.5] text-xl bg-white rounded-2xl shadow-sm border border-gray-100 text-gray-800 font-medium pb-80 min-h-[50vh]">
-        <div className="flex flex-wrap items-baseline">
+    // CONTENEUR PRINCIPAL : Hauteur fixe calculée (100% écran - Header - Marges)
+    // Cela empêche la page entière de scroller.
+    <div className="flex flex-col h-[calc(100vh-140px)] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      
+      {/* ZONE 1 : LE TEXTE (Partie Haute) */}
+      {/* 'flex-1' signifie qu'elle prend tout l'espace disponible */}
+      {/* 'overflow-y-auto' signifie que la barre de défilement est ICI, pas sur la page */}
+      <div className="flex-1 overflow-y-auto p-8 transition-all duration-300">
+        <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isPunctuation = token.pos === "Supplementary symbol" || token.surface === "。";
              const isSelected = selectedWord === token;
@@ -76,9 +73,9 @@ const Reader = ({ tokens }) => {
                 key={index}
                 onClick={() => handleWordClick(token)}
                 className={`
-                  cursor-pointer transition-all duration-200 rounded px-[2px] mx-[1px]
-                  ${isSelected ? 'bg-indigo-600 text-white shadow-md transform scale-105' : ''} 
-                  ${!isPunctuation && !isSelected ? 'hover:bg-indigo-100 hover:text-indigo-700 border-b-2 border-transparent hover:border-indigo-300' : ''}
+                  cursor-pointer transition-all duration-150 rounded px-[2px] mx-[1px] inline-block
+                  ${isSelected ? 'bg-indigo-600 text-white shadow-sm scale-105' : ''} 
+                  ${!isPunctuation && !isSelected ? 'hover:bg-indigo-100 hover:text-indigo-700' : ''}
                 `}
               >
                 {token.surface}
@@ -86,50 +83,60 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
+        {/* Espace vide en bas pour le confort visuel */}
+        <div className="h-20"></div>
       </div>
 
-      {/* PANNEAU DOCKÉ EN BAS (Bottom Panel) */}
+      {/* ZONE 2 : PANNEAU D'INFORMATION (Partie Basse) */}
+      {/* S'affiche uniquement si un mot est sélectionné */}
       {selectedWord && (
-        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[100] animate-slide-up">
-          
-          {/* Barre de progression de chargement (optionnel mais sympa) */}
-          {loading && <div className="h-1 w-full bg-indigo-100"><div className="h-full bg-indigo-500 animate-pulse"></div></div>}
+        <div 
+            ref={panelRef}
+            className="h-72 flex-shrink-0 bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 flex flex-col animate-slide-up"
+        >
+          {/* Barre de chargement */}
+          {loading && <div className="h-1 w-full bg-indigo-200"><div className="h-full bg-indigo-600 animate-pulse w-1/3 mx-auto"></div></div>}
 
-          <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-            
-            {/* Partie Gauche : Info du mot */}
-            <div className="flex-1">
-                <div className="flex items-baseline gap-3 mb-2">
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex items-baseline gap-3 flex-wrap">
                     <h3 className="text-3xl font-bold text-indigo-700">{selectedWord.surface}</h3>
                     <span className="text-xl font-bold text-gray-400">/</span>
                     <p className="text-xl font-medium text-gray-800">【{selectedWord.reading}】</p>
-                    <span className="ml-2 bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider">
+                    <span className="bg-white border border-gray-200 text-gray-500 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider shadow-sm">
                         {selectedWord.pos}
                     </span>
                 </div>
-                
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <button 
+                    onClick={() => setSelectedWord(null)}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full p-1 transition"
+                >
+                    ✕
+                </button>
+            </div>
+            
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <p className="text-gray-700 text-lg leading-relaxed">
                     {loading ? "Recherche de la définition..." : definition}
                 </p>
             </div>
+          </div>
 
-            {/* Partie Droite : Actions */}
-            <div className="flex gap-3 w-full md:w-auto shrink-0">
-                <button 
-                    onClick={addToSRS}
-                    disabled={loading}
-                    className="flex-1 md:flex-none px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 whitespace-nowrap"
-                >
-                    <span>🧠</span> Ajouter
-                </button>
-                <button 
-                    onClick={closePanel}
-                    className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 transition"
-                >
-                    Fermer
-                </button>
-            </div>
-
+          {/* Boutons d'action en bas du panneau */}
+          <div className="p-4 bg-white border-t border-gray-200 flex justify-end gap-3">
+             <button 
+                onClick={() => setSelectedWord(null)}
+                className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition"
+            >
+                Fermer
+            </button>
+            <button 
+                onClick={addToSRS}
+                disabled={loading}
+                className="px-8 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2"
+            >
+                <span>🧠</span> Ajouter aux révisions
+            </button>
           </div>
         </div>
       )}
