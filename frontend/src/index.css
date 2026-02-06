@@ -2,22 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- CONFIGURATION CRITIQUE POUR L'APPLICATION --- */
+/* RÈGLE 1 : Tout calcul de taille inclut les bordures/padding */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-/* On force la racine du site à prendre exactement 100% de la fenêtre.
-   On interdit le scroll sur le 'body' pour forcer le scroll 
-   uniquement dans nos zones spécifiques (texte, bibliothèque).
-*/
+/* RÈGLE 2 : La fenêtre est fixe. Pas de scroll global. */
 html, body, #root {
-  height: 100%;
+  height: 100vh; /* Utilise vh (viewport height) pour être sûr */
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* C'est cette ligne qui empêche la page de bouger */
-}
-
-/* Amélioration du rendu du texte (Optionnel mais recommandé) */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Bloque le scroll du navigateur */
 }
