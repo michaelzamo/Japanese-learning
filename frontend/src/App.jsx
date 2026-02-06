@@ -10,7 +10,6 @@ function App() {
   const [currentTextId, setCurrentTextId] = useState(null); 
   const [tokens, setTokens] = useState([]);
 
-  // Analyse du texte
   const handleAnalyze = async () => {
     if (!input.trim()) return;
     try {
@@ -55,8 +54,6 @@ function App() {
     setCurrentTextId(textObject.id); 
     setTokens([]); 
     setCurrentView('reader');
-    // Scroll en haut de page automatiquement
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNewText = () => {
@@ -67,118 +64,82 @@ function App() {
     setCurrentTextId(null); 
   };
 
-  // Helper pour les classes des boutons (évite la répétition et le décalage)
   const getNavClass = (viewName) => {
     const baseClass = "px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2";
     const activeClass = "bg-indigo-600 text-white shadow-md transform scale-105";
     const inactiveClass = "text-gray-500 hover:bg-gray-100 hover:text-indigo-600";
-    
-    // Logique spécifique pour le bouton 'Nouveau' qui doit être actif si on est en mode reader sans ID
-    if (viewName === 'new' && currentView === 'reader' && currentTextId === null) {
-        return `${baseClass} ${activeClass}`;
-    }
-    // Logique pour les autres onglets standards
-    if (currentView === viewName) {
-        return `${baseClass} ${activeClass}`;
-    }
+    if (viewName === 'new' && currentView === 'reader' && currentTextId === null) return `${baseClass} ${activeClass}`;
+    if (currentView === viewName) return `${baseClass} ${activeClass}`;
     return `${baseClass} ${inactiveClass}`;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
+    // CHANGEMENT MAJEUR ICI : h-screen + overflow-hidden
+    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
       
-      {/* MENU DE NAVIGATION - FIXE EN HAUT */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4">
+      {/* Navbar : Flex-none pour qu'elle ne s'écrase pas */}
+      <nav className="flex-none bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 z-50">
+        <div className="max-w-6xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
-            <span 
-                onClick={handleNewText}
-                className="font-black text-2xl text-indigo-600 cursor-pointer tracking-tight"
-            >
+            <span onClick={handleNewText} className="font-black text-2xl text-indigo-600 cursor-pointer tracking-tight">
                 🇯🇵 JapaLearn
             </span>
             <div className="flex space-x-1 md:space-x-2">
-              <button onClick={handleNewText} className={getNavClass('new')}>
-                📝 <span className="hidden md:inline">Nouveau</span>
-              </button>
-              <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>
-                📚 <span className="hidden md:inline">Bibliothèque</span>
-              </button>
-              <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>
-                🧠 <span className="hidden md:inline">Révisions</span>
-              </button>
+              <button onClick={handleNewText} className={getNavClass('new')}>📝 <span className="hidden md:inline">Nouveau</span></button>
+              <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>📚 <span className="hidden md:inline">Bibliothèque</span></button>
+              <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>🧠 <span className="hidden md:inline">Révisions</span></button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* CONTENU PRINCIPAL */}
-      <main className="flex-grow max-w-5xl mx-auto w-full px-4 py-8">
+      {/* Main : Flex-1 pour prendre TOUT le reste de la place + overflow-hidden */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-4 overflow-hidden flex flex-col">
         
         {currentView === 'reader' && (
-          <div className="h-full">
+          // Le conteneur du lecteur prend toute la hauteur disponible (h-full)
+          <div className="h-full flex flex-col">
              {!tokens.length ? (
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 animate-fade-in">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h2 className="text-xl font-bold text-gray-700">
-                        {currentTextId ? "✍️ Modification" : "📝 Nouveau texte"}
-                    </h2>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <button onClick={handleSaveText} className="flex-1 md:flex-none px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-bold transition">
-                            Sauvegarder
-                        </button>
-                        <button onClick={handleAnalyze} className="flex-1 md:flex-none px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition transform active:scale-95">
-                            Analyser
-                        </button>
+              // Vue Édition (Scrollable si besoin)
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col gap-4 overflow-y-auto">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-gray-700">{currentTextId ? "✍️ Modification" : "📝 Nouveau texte"}</h2>
+                    <div className="flex gap-2">
+                        <button onClick={handleSaveText} className="px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-bold transition">Sauvegarder</button>
+                        <button onClick={handleAnalyze} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition">Analyser</button>
                     </div>
                 </div>
-                
-                <input
-                  type="text"
-                  className="w-full p-4 text-xl font-bold text-gray-800 border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:outline-none transition placeholder-gray-300 bg-gray-50 focus:bg-white"
-                  placeholder="Titre..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-
-                <textarea
-                    className="w-full h-[60vh] p-6 text-lg leading-loose text-gray-700 border-2 border-gray-100 rounded-xl focus:border-indigo-500 focus:outline-none transition resize-y font-medium shadow-inner"
-                    placeholder="Collez votre texte japonais ici..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                />
+                <input type="text" className="w-full p-4 text-xl font-bold border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none bg-gray-50 focus:bg-white" placeholder="Titre..." value={title} onChange={(e) => setTitle(e.target.value)} />
+                <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none resize-none shadow-inner" placeholder="Collez votre texte japonais ici..." value={input} onChange={(e) => setInput(e.target.value)} />
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto animate-fade-in">
-                <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 sticky top-20 z-30">
-                    <div className="flex flex-col">
-                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Lecture en cours</span>
-                        <h1 className="text-xl font-bold text-gray-800 truncate max-w-xs md:max-w-md">{title || "Sans titre"}</h1>
-                    </div>
-                    <button 
-                        onClick={() => setTokens([])} 
-                        className="text-gray-500 hover:text-indigo-600 transition font-medium px-3 py-1 rounded-lg hover:bg-gray-50 text-sm"
-                    >
-                    ✏️ Éditer
-                    </button>
+              // Vue Lecture (Reader)
+              <div className="h-full flex flex-col">
+                <div className="flex-none flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                    <h1 className="text-lg font-bold text-gray-800 truncate">{title || "Sans titre"}</h1>
+                    <button onClick={() => setTokens([])} className="text-sm text-gray-500 hover:text-indigo-600 font-bold px-3 py-1 rounded-lg hover:bg-gray-50">✏️ Éditer</button>
                 </div>
-                
-                {/* Le composant Reader gère l'affichage du texte */}
-                <Reader tokens={tokens} />
+                {/* On passe le relais au composant Reader */}
+                <div className="flex-1 overflow-hidden relative bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <Reader tokens={tokens} />
+                </div>
               </div>
             )}
           </div>
         )}
 
+        {/* Bibliothèque et Révisions doivent aussi scroller indépendamment */}
         {currentView === 'library' && (
-            <div className="max-w-6xl mx-auto">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2 flex items-center gap-2">📚 Ma Bibliothèque</h2>
+            <div className="h-full overflow-y-auto">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 px-2">📚 Ma Bibliothèque</h2>
                 <Library onLoadText={loadTextFromLibrary} />
             </div>
         )}
 
         {currentView === 'reviews' && (
-          <ReviewSession />
+          <div className="h-full overflow-y-auto">
+              <ReviewSession />
+          </div>
         )}
 
       </main>
