@@ -6,10 +6,7 @@ const Reader = ({ tokens }) => {
   const [loading, setLoading] = useState(false);
 
   const handleWordClick = (token) => {
-    if (selectedWord === token) {
-      setSelectedWord(null); 
-      return;
-    }
+    if (selectedWord === token) { setSelectedWord(null); return; }
     setSelectedWord(token);
     setLoading(true);
     fetchDefinition(token.lemma);
@@ -20,57 +17,40 @@ const Reader = ({ tokens }) => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/definition?word=${word}`);
       const data = await res.json();
       setDefinition(data.definition);
-    } catch (err) {
-      setDefinition("Impossible de charger la définition");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setDefinition("Erreur"); } 
+    finally { setLoading(false); }
   };
 
   const addToSRS = async () => {
     if (!selectedWord) return;
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/cards`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/cards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          word: selectedWord.surface,
-          reading: selectedWord.reading,
-          meaning: definition 
-        }),
+        body: JSON.stringify({ word: selectedWord.surface, reading: selectedWord.reading, meaning: definition }),
       });
-      if (response.ok) {
-        alert(`"${selectedWord.surface}" ajouté aux révisions !`);
-        setSelectedWord(null);
-      } else {
-        alert("Ce mot est déjà dans ta liste.");
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion");
-    }
+      alert("Ajouté !"); setSelectedWord(null);
+    } catch (error) { alert("Erreur"); }
   };
 
   return (
-    // Structure FLEX COLUMN qui prend 100% de la hauteur du parent
-    <div className="flex flex-col h-full w-full">
+    // 1. LE CONTENEUR PRINCIPAL (Prend 100% de l'espace donné par App.jsx)
+    <div className="h-full w-full flex flex-col bg-white">
       
-      {/* ZONE 1 : LE TEXTE (SCROLLABLE) */}
-      {/* C'est la seule zone qui a le droit de scroller */}
-      <div className="flex-1 overflow-y-auto p-6 transition-all duration-300">
+      {/* 2. ZONE DE TEXTE (SCROLLABLE) */}
+      {/* flex-1 : Prend tout l'espace disponible */}
+      {/* overflow-y-auto : Si le texte est trop long, la scrollbar apparaît ICI */}
+      <div className="flex-1 overflow-y-auto p-8 bg-white">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
-             const isPunctuation = token.pos === "Supplementary symbol" || token.surface === "。";
              const isSelected = selectedWord === token;
-
              return (
               <span
                 key={index}
                 onClick={() => handleWordClick(token)}
                 className={`
-                  cursor-pointer transition-all duration-150 rounded px-[2px] mx-[1px] inline-block
-                  ${isSelected ? 'bg-indigo-600 text-white shadow-sm scale-105' : ''} 
-                  ${!isPunctuation && !isSelected ? 'hover:bg-indigo-100 hover:text-indigo-700' : ''}
+                  cursor-pointer rounded px-1 mx-[1px] inline-block transition-colors
+                  ${isSelected ? 'bg-indigo-600 text-white' : 'hover:bg-indigo-100 hover:text-indigo-700'}
                 `}
               >
                 {token.surface}
@@ -78,62 +58,36 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Petit espace vide à la fin pour ne pas que le dernier mot soit collé au bord */}
+        {/* Marge en bas pour ne pas coller au bord */}
         <div className="h-10"></div>
       </div>
 
-      {/* ZONE 2 : PANNEAU D'INFORMATION (FIXE EN BAS) */}
-      {/* Il est dans le flux Flexbox, donc il "pousse" le texte vers le haut */}
+      {/* 3. ZONE DE DÉFINITION (PANNEAU FIXE EN BAS) */}
+      {/* S'affiche uniquement si un mot est sélectionné */}
+      {/* flex-none : Ne rétrécit pas, ne grandit pas */}
       {selectedWord && (
-        <div className="flex-none h-72 bg-gray-50 border-t-2 border-indigo-100 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-20 flex flex-col animate-slide-up">
+        <div className="flex-none h-72 border-t-4 border-indigo-100 bg-gray-50 flex flex-col shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-10">
           
-          {/* Barre de chargement */}
-          {loading && <div className="h-1 w-full bg-indigo-200"><div className="h-full bg-indigo-600 animate-pulse w-1/3 mx-auto"></div></div>}
-
-          {/* Contenu Définition (Lui aussi peut scroller si la définition est immense) */}
+          {/* Contenu (Scrollable si la définition est longue) */}
           <div className="flex-1 p-6 overflow-y-auto">
-            
-            {/* Header du mot */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                    <h3 className="text-3xl font-bold text-indigo-700">{selectedWord.surface}</h3>
-                    <span className="text-xl font-bold text-gray-400">/</span>
-                    <p className="text-xl font-medium text-gray-800">【{selectedWord.reading}】</p>
-                    <span className="bg-white border border-gray-200 text-gray-500 text-xs px-2 py-1 rounded uppercase font-bold tracking-wider shadow-sm">
-                        {selectedWord.pos}
-                    </span>
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <span className="text-3xl font-bold text-indigo-700 mr-3">{selectedWord.surface}</span>
+                    <span className="text-xl text-gray-600">【{selectedWord.reading}】</span>
                 </div>
-                <button 
-                    onClick={() => setSelectedWord(null)}
-                    className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition"
-                >
-                    ✕
-                </button>
+                <button onClick={() => setSelectedWord(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-
-            {/* Texte de définition */}
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-700 text-lg leading-relaxed">
-                    {loading ? "Recherche de la définition..." : definition}
-                </p>
-            </div>
+            <p className="text-gray-700 text-lg leading-relaxed bg-white p-3 border rounded-lg">
+                {loading ? "..." : definition}
+            </p>
           </div>
 
-          {/* Actions (Toujours visibles en bas du panneau) */}
-          <div className="p-4 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
-             <button 
-                onClick={() => setSelectedWord(null)}
-                className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition"
-            >
-                Fermer
-            </button>
-            <button 
-                onClick={addToSRS}
-                disabled={loading}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md transition flex items-center gap-2"
-            >
-                <span>🧠</span> Ajouter
-            </button>
+          {/* Boutons (Fixes en bas du panneau) */}
+          <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3">
+             <button onClick={() => setSelectedWord(null)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Fermer</button>
+             <button onClick={addToSRS} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm">
+                + Ajouter
+             </button>
           </div>
         </div>
       )}
