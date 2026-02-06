@@ -4,18 +4,20 @@ const Reader = ({ tokens }) => {
   const [selectedWord, setSelectedWord] = useState(null);
   const [definition, setDefinition] = useState("Chargement...");
 
-  // Quand un mot est sélectionné, on cherche sa définition
+  // Gestion du verrouillage du scroll et chargement
   useEffect(() => {
     if (selectedWord) {
+      // 1. On bloque le scroll
+      document.body.style.overflow = 'hidden';
+      // 2. On lance la recherche
       setDefinition("Recherche de la traduction...");
       fetchDefinition(selectedWord.lemma);
-      // On bloque le scroll de la page derrière pour plus de confort
-      document.body.style.overflow = 'hidden';
     } else {
-      // On réactive le scroll quand on ferme le popup
+      // Si on ferme, on débloque le scroll
       document.body.style.overflow = 'unset';
     }
     
+    // Nettoyage au cas où le composant est démonté
     return () => { document.body.style.overflow = 'unset'; }
   }, [selectedWord]);
 
@@ -58,7 +60,6 @@ const Reader = ({ tokens }) => {
       <div className="p-8 leading-[2.5] text-xl bg-white rounded-2xl shadow-sm border border-gray-100 text-gray-800 font-medium">
         <div className="flex flex-wrap items-baseline">
           {tokens.map((token, index) => {
-             // On détecte si c'est de la ponctuation pour ne pas mettre d'espace avant/après inutilement
              const isPunctuation = token.pos === "Supplementary symbol" || token.surface === "。";
              
              return (
@@ -77,12 +78,18 @@ const Reader = ({ tokens }) => {
         </div>
       </div>
 
-      {/* POPUP MODAL (Fixe au centre de l'écran) */}
+      {/* POPUP MODAL (Correction Z-Index et Position) */}
       {selectedWord && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedWord(null)}>
+        <div 
+            className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+            onClick={() => setSelectedWord(null)}
+        >
           
-          {/* Contenu de la carte (On empêche le clic de fermer le modal) */}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100" onClick={(e) => e.stopPropagation()}>
+          {/* Contenu de la carte */}
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()} // Empêche de fermer si on clique DANS la carte
+          >
             
             {/* En-tête coloré */}
             <div className="bg-indigo-600 p-6 text-white">
@@ -99,7 +106,7 @@ const Reader = ({ tokens }) => {
             
             {/* Corps de la définition */}
             <div className="p-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6 min-h-[80px]">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6 min-h-[80px] max-h-[200px] overflow-y-auto">
                     <p className="text-gray-700 text-lg leading-relaxed">{definition}</p>
                 </div>
 
