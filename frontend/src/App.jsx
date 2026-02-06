@@ -66,10 +66,10 @@ function App() {
   };
 
   return (
-    // ROOT: Prend tout l'écran, pas de scroll ici.
-    <div className="h-full w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
+    // 1. ROOT : Prend tout l'écran (h-screen)
+    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
       
-      {/* NAVBAR */}
+      {/* 2. NAVBAR : Taille fixe (flex-none) */}
       <nav className="flex-none h-16 bg-white shadow-sm border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
             <span onClick={handleNewText} className="font-black text-xl md:text-2xl text-indigo-600 cursor-pointer">
@@ -83,13 +83,14 @@ function App() {
         </div>
       </nav>
 
-      {/* MAIN CONTAINER */}
-      {/* IMPORTANT : J'ai retiré le padding global (p-4) ici ! */}
+      {/* 3. MAIN : Prend TOUT l'espace restant (flex-1). 
+         IMPORTANT: J'ai retiré le padding (p-4) ici pour éviter les conflits de hauteur. 
+         Le padding est géré dans les enfants. */}
       <main className="flex-1 w-full max-w-7xl mx-auto overflow-hidden relative flex flex-col">
         
         {/* VUE LECTEUR */}
         {currentView === 'reader' && (
-          // On remet un peu de margin (m-4) pour que ce ne soit pas collé, mais on gère la hauteur avec calc
+          // On met le padding (m-4) ici pour décoller du bord, mais on utilise flex-1 pour la hauteur
           <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden m-2 md:m-4">
              {!tokens.length ? (
               // ÉDITEUR
@@ -105,14 +106,14 @@ function App() {
                 <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl outline-none resize-none shadow-inner overflow-y-auto" placeholder="Collez le texte ici..." value={input} onChange={(e) => setInput(e.target.value)} />
               </div>
             ) : (
-              // LECTEUR / SPLIT VIEW
+              // LECTEUR
               <div className="h-full w-full flex flex-col overflow-hidden">
                 <div className="flex-none h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-6">
                     <h1 className="text-lg font-bold text-gray-800 truncate">{title}</h1>
                     <button onClick={() => setTokens([])} className="text-sm font-bold text-gray-500 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-white">✏️ Éditer</button>
                 </div>
-                {/* Conteneur du Reader */}
-                <div className="flex-1 overflow-hidden relative w-full h-full">
+                {/* C'est ici que Reader est appelé. Il est dans un conteneur flex-1 overflow-hidden */}
+                <div className="flex-1 overflow-hidden relative w-full">
                     <Reader tokens={tokens} />
                 </div>
               </div>
@@ -120,7 +121,7 @@ function App() {
           </div>
         )}
 
-        {/* VUE BIBLIOTHÈQUE - Ici on ajoute du padding car c'est une page normale */}
+        {/* VUE BIBLIOTHÈQUE - On ajoute le padding ici */}
         {currentView === 'library' && (
             <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 sticky top-0 bg-gray-50 py-2 z-10">📚 Ma Bibliothèque</h2>
@@ -128,7 +129,7 @@ function App() {
             </div>
         )}
 
-        {/* VUE RÉVISIONS - Ici on ajoute du padding */}
+        {/* VUE RÉVISIONS - On ajoute le padding ici */}
         {currentView === 'reviews' && (
           <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
               <ReviewSession />
