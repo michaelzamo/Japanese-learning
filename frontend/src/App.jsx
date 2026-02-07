@@ -66,79 +66,10 @@ function App() {
   };
 
   return (
-    // 1. ROOT : Prend tout l'écran (h-screen)
-    <div className="h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col overflow-hidden">
+    // STRUCTURE GRID : Ligne 1 (Navbar) AUTO, Ligne 2 (Main) RESTE (1fr)
+    <div className="h-screen w-screen bg-gray-50 font-sans text-gray-900 grid grid-rows-[auto_1fr] overflow-hidden">
       
-      {/* 2. NAVBAR : Taille fixe (flex-none) */}
-      <nav className="flex-none h-16 bg-white shadow-sm border-b border-gray-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
-            <span onClick={handleNewText} className="font-black text-xl md:text-2xl text-indigo-600 cursor-pointer">
-                🇯🇵 JapaLearn
-            </span>
-            <div className="flex space-x-2">
-              <button onClick={handleNewText} className={getNavClass('reader')}>📝 Nouveau</button>
-              <button onClick={() => setCurrentView('library')} className={getNavClass('library')}>📚 Bibliothèque</button>
-              <button onClick={() => setCurrentView('reviews')} className={getNavClass('reviews')}>🧠 Révisions</button>
-            </div>
-        </div>
-      </nav>
-
-      {/* 3. MAIN : Prend TOUT l'espace restant (flex-1). 
-         IMPORTANT: J'ai retiré le padding (p-4) ici pour éviter les conflits de hauteur. 
-         Le padding est géré dans les enfants. */}
-      <main className="flex-1 w-full max-w-7xl mx-auto overflow-hidden relative flex flex-col">
-        
-        {/* VUE LECTEUR */}
-        {currentView === 'reader' && (
-          // On met le padding (m-4) ici pour décoller du bord, mais on utilise flex-1 pour la hauteur
-          <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden m-2 md:m-4">
-             {!tokens.length ? (
-              // ÉDITEUR
-              <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
-                <div className="flex-none flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-700">{currentTextId ? "Modification" : "Nouveau texte"}</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleSaveText} className="px-4 py-2 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg font-bold">Sauvegarder</button>
-                        <button onClick={handleAnalyze} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md">Analyser</button>
-                    </div>
-                </div>
-                <input type="text" className="flex-none w-full p-4 mb-4 text-xl font-bold border-2 border-gray-100 rounded-xl outline-none" placeholder="Titre..." value={title} onChange={(e) => setTitle(e.target.value)} />
-                <textarea className="flex-1 w-full p-6 text-lg leading-loose border-2 border-gray-100 rounded-xl outline-none resize-none shadow-inner overflow-y-auto" placeholder="Collez le texte ici..." value={input} onChange={(e) => setInput(e.target.value)} />
-              </div>
-            ) : (
-              // LECTEUR
-              <div className="h-full w-full flex flex-col overflow-hidden">
-                <div className="flex-none h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-6">
-                    <h1 className="text-lg font-bold text-gray-800 truncate">{title}</h1>
-                    <button onClick={() => setTokens([])} className="text-sm font-bold text-gray-500 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-white">✏️ Éditer</button>
-                </div>
-                {/* C'est ici que Reader est appelé. Il est dans un conteneur flex-1 overflow-hidden */}
-                <div className="flex-1 overflow-hidden relative w-full">
-                    <Reader tokens={tokens} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VUE BIBLIOTHÈQUE - On ajoute le padding ici */}
-        {currentView === 'library' && (
-            <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 sticky top-0 bg-gray-50 py-2 z-10">📚 Ma Bibliothèque</h2>
-                <Library onLoadText={loadTextFromLibrary} />
-            </div>
-        )}
-
-        {/* VUE RÉVISIONS - On ajoute le padding ici */}
-        {currentView === 'reviews' && (
-          <div className="h-full w-full overflow-y-auto p-4 pb-20 scroll-smooth">
-              <ReviewSession />
-          </div>
-        )}
-
-      </main>
-    </div>
-  );
-}
-
-export default App;
+      {/* 1. NAVBAR */}
+      <nav className="bg-white shadow-sm border-b border-gray-200 z-50 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <span onClick={handleNewText} className="font-black text-xl md:text-2xl
