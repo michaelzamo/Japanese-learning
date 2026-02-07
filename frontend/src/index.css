@@ -2,24 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Règle universelle */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-/* CONFIGURATION GRID :
-   On transforme le #root en une grille de 100vh de haut.
-   Cela force l'application à ne jamais dépasser l'écran.
-*/
+/* RÈGLE ABSOLUE : Reset total */
 html, body, #root {
-  height: 100vh;
-  width: 100vw;
+  height: 100vh; /* Hauteur de l'écran */
+  width: 100vw;  /* Largeur de l'écran */
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Scroll global interdit */
+  overflow: hidden; /* INTERDIT tout scroll global */
 }
 
-#root {
-  display: grid;
-  grid-template-rows: auto 1fr; /* Ligne 1: Auto (Navbar), Ligne 2: Reste (Main) */
+/* Tout élément inclut ses bordures dans sa taille */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
