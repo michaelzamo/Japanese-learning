@@ -34,14 +34,15 @@ const Reader = ({ tokens }) => {
   };
 
   return (
-    // H-FULL est obligatoire pour remplir le parent
-    <div className="h-full w-full flex flex-col bg-white relative">
+    // CONFIGURATION GRID DU READER
+    // h-full : Prend tout l'espace du parent
+    // grid : Active le mode grille
+    // grid-rows-[1fr_auto] : Le haut est flexible, le bas (panneau) est 'auto'
+    <div className={`h-full w-full grid ${selectedWord ? 'grid-rows-[1fr_300px]' : 'grid-rows-[1fr]'}`}>
       
       {/* ZONE 1 : LE TEXTE */}
-      {/* flex-1 : Prend tout l'espace */}
-      {/* min-h-0 : Force le navigateur à accepter de réduire cette zone si besoin (débloque le scroll) */}
-      {/* overflow-y-auto : Active la scrollbar */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 bg-white transition-all">
+      {/* overflow-y-auto : C'est ICI que ça scrolle */}
+      <div className="overflow-y-auto p-6 md:p-8 bg-white">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isSelected = selectedWord === token;
@@ -59,14 +60,13 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Padding géant en bas pour que le dernier mot ne soit jamais caché derrière le panneau */}
-        <div className="h-40"></div>
+        {/* Un peu d'espace en bas */}
+        <div className="h-20"></div>
       </div>
 
-      {/* ZONE 2 : LE PANNEAU */}
-      {/* flex-none : Garde sa taille fixe */}
+      {/* ZONE 2 : LE PANNEAU (Seulement si sélectionné) */}
       {selectedWord && (
-        <div className="flex-none h-72 bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col">
+        <div className="bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col overflow-hidden h-[300px]">
           
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex justify-between items-start mb-2">
