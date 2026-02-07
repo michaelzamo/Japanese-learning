@@ -36,13 +36,13 @@ const Reader = ({ tokens }) => {
   return (
     // CONFIGURATION GRID DU READER
     // h-full : Prend tout l'espace du parent
-    // grid : Active le mode grille
-    // grid-rows-[1fr_auto] : Le haut est flexible, le bas (panneau) est 'auto'
-    <div className={`h-full w-full grid ${selectedWord ? 'grid-rows-[1fr_300px]' : 'grid-rows-[1fr]'}`}>
+    // grid-rows-[1fr_auto] : Le texte prend tout (1fr), le panneau prend sa taille (auto)
+    <div className={`h-full w-full grid ${selectedWord ? 'grid-rows-[1fr_300px]' : 'grid-rows-[1fr]'} transition-all duration-300`}>
       
       {/* ZONE 1 : LE TEXTE */}
-      {/* overflow-y-auto : C'est ICI que ça scrolle */}
-      <div className="overflow-y-auto p-6 md:p-8 bg-white">
+      {/* min-h-0 : OBLIGATOIRE. Empêche la grille de s'agrandir au-delà de l'écran. */}
+      {/* overflow-y-auto : Active la scrollbar SI le contenu dépasse */}
+      <div className="overflow-y-auto p-6 md:p-8 bg-white min-h-0">
         <div className="text-xl leading-[2.5] font-medium text-gray-800">
           {tokens.map((token, index) => {
              const isSelected = selectedWord === token;
@@ -60,7 +60,7 @@ const Reader = ({ tokens }) => {
             );
           })}
         </div>
-        {/* Un peu d'espace en bas */}
+        {/* Un peu d'espace en bas pour le confort */}
         <div className="h-20"></div>
       </div>
 
@@ -68,6 +68,7 @@ const Reader = ({ tokens }) => {
       {selectedWord && (
         <div className="bg-gray-50 border-t-4 border-indigo-100 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20 flex flex-col overflow-hidden h-[300px]">
           
+          {/* Contenu Définition (Scrollable) */}
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex justify-between items-start mb-2">
                 <div>
@@ -81,6 +82,7 @@ const Reader = ({ tokens }) => {
             </p>
           </div>
 
+          {/* Boutons Actions */}
           <div className="p-3 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0">
              <button onClick={() => setSelectedWord(null)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded font-medium">Fermer</button>
              <button onClick={addToSRS} className="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2">
